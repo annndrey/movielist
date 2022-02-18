@@ -16,11 +16,13 @@ class ActorSchema(Schema):
 
 @ActorAPI.route('/actors')
 def actors():
+    # Simple pagination here with some default values
     page = request.args.get('page', 0, type=int)
     per_page = 10
     offset = per_page * page
     
     actor_schema = ActorSchema()
+    # Getting all actors from the DB 
     all_actors = [actor_schema.dump(a) for a in db.session.query(Actor).limit(per_page).offset(offset).all()]
     
     return jsonify(all_actors)
@@ -35,11 +37,14 @@ def actors_stats():
     # Ashton Kutcher, 2007, 1
     # Gary Sinise, 2005, 3
     # Gary Sinise, 2006, 4
+    # Query1 - getting all actors together with their movie's years
     actors_query = db.session.query(Actor.name, Movie.year).filter(actor_association_table.c.actor_id == Actor.id).filter(actor_association_table.c.movie_id==Movie.id)
     asq = actors_query.subquery()
+    # Query2 - getting movies count by year
     years_count_query = db.session.query(Movie.year, func.count(Movie.year)).group_by(Movie.year)
     ysq = years_count_query.subquery()
+    # Putting two results together
     result = db.session.query(asq.c.name, asq.c.year, ysq.c.count).filter(asq.c.year==ysq.c.year).order_by(asq.c.name).all()
         
-        
+    # Et voilà, the results
     return jsonify([[r[0], r[1], r[2]] for r in result])

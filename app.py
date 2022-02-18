@@ -15,16 +15,18 @@ from modules.db import session
 
 app = Flask(__name__)
 
+# Adding modules
 app.register_blueprint(MovieAPI)
 app.register_blueprint(ActorAPI)
 app.register_blueprint(GenreAPI)
 
+
 #@app.before_first_request
 def fill_db():
     app.logger.info("Filling DB with some data from data/movies.json")
-    # Parse json
-    # Validate data
-    # Remove invalid entries
+    # Parsing json
+    # Validating data
+    # Removing invalid entries
     # Put records to the DB
 
     ia = Cinemagoer()
@@ -42,21 +44,26 @@ def fill_db():
             db_actors = []
             db_genres = []
 
+            # Processing actors
             for a in m['cast']:
                     if len(a.split(" ")) < 2:
                         if a.lower() not in non_names:
                             if a[0].isupper():
+                                # Searching actors by name in IMDB
                                 people = ia.search_person(a)
                                 if len(people) > 0:
                                     found_name = people[0]['name']
+                                    # If somethig's found, check for similarity with the source name
                                     sim_ratio = fuzz.ratio(a, found_name)
+                                    # If initial name and the IMDB data are quite similar,
+                                    # we can add it to the DB
                                     if sim_ratio > 75:
-                                        print(["MATCH", a, found_name, sim_ratio])
                                         movie_cast.append(found_name)
                     else:
                         # OK 
                         # print(a)
                         movie_cast.append(a)
+            # Adding actors to the DB
             for a in movie_cast:
                 actor = session.query(Actor).filter(Actor.name == a).first()
                 if actor is None:
@@ -64,7 +71,7 @@ def fill_db():
                     session.add(actor)
                     session.commit()
                 db_actors.append(actor)
-                
+            # Processing genres
             for g in m['genres']:
                 genre = session.query(Genre).filter(Genre.name == g).first()
                 if genre is None:
@@ -72,6 +79,7 @@ def fill_db():
                     session.add(genre)
                     session.commit()
                 db_genres.append(genre)
+            # Finally adding movies
             movie = Movie(title=m['title'], year=m['year'])
             movie.cast = db_actors
             movie.genres = db_genres

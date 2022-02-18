@@ -15,6 +15,7 @@ class GenreSchema(Schema):
 @GenreAPI.route('/genres')
 def genres():
     genre_schema = GenreSchema()
+    # Getting all genres without pagination
     all_genres = db.session.query(Genre).all()
     res = [genre_schema.dump(g) for g in all_genres]
     return jsonify(res)
